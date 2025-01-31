@@ -112,6 +112,20 @@ public class ButtonController {
         eight.setOnAction(event -> handleButtonClick("8"));
         nine.setOnAction(event -> handleButtonClick("9"));
 
+        //handles operators
+        plus.setOnAction(event -> handleButtonClick("+"));
+        minus.setOnAction(event -> handleButtonClick("-"));
+        times.setOnAction(event -> handleButtonClick("*"));
+        divides.setOnAction(event -> handleButtonClick("/"));
+        negativeToggle.setOnAction(event -> handleNegativeToggle());
+
+        //handles brackets
+        leftParentheses.setOnAction(event -> handleButtonClick("("));
+        rightParentheses.setOnAction(event -> handleButtonClick(")"));
+        leftCurrlyBracket.setOnAction(event -> handleButtonClick("{"));
+        rightCurrlyBracket.setOnAction(event -> handleButtonClick("}"));
+
+        //handles the undo and clear button
         undo.setOnAction(this::handleDelete);
         clear.setOnAction(this::handleDelete);
     }
@@ -130,5 +144,39 @@ public class ButtonController {
         else if (event.getSource() == clear) {
             output.clear();
         }
+    }
+    //Toggles the negative (utilized chatgpt for the logic)
+    public void handleNegativeToggle() {
+        String currentText = output.getText();
+        if (currentText.isEmpty()) return;
+
+        // Find the last operator position (to get last number)
+        int lastOperatorIndex = -1;
+        for (int i = currentText.length() - 1; i >= 0; i--) {
+            char c = currentText.charAt(i);
+            if (c == '+' || c == '-' || c == '*' || c == '/') {
+                lastOperatorIndex = i;
+                break;
+            }
+        }
+
+        // Extract last number
+        String lastNumber = currentText.substring(lastOperatorIndex + 1).trim();
+
+        // Toggle negative sign properly
+        String newText;
+        if (lastNumber.startsWith("(-") && lastNumber.endsWith(")")) {
+            // Remove the (-...) notation
+            newText = currentText.substring(0, lastOperatorIndex + 1) + lastNumber.substring(2, lastNumber.length() - 1);
+        } else if (lastNumber.startsWith("-") && !lastNumber.startsWith("(-")) {
+            // Remove simple negative sign
+            newText = currentText.substring(0, lastOperatorIndex + 1) + lastNumber.substring(1);
+        } else {
+            // Add (-...) notation
+            newText = currentText.substring(0, lastOperatorIndex + 1) + "(-" + lastNumber + ")";
+        }
+
+        // Update the display
+        output.setText(newText);
     }
 }
