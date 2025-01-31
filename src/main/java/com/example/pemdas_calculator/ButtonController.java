@@ -135,8 +135,21 @@ public class ButtonController {
 
     //Allows the values of the buttons to be input into the text field
     public void handleButtonClick(String value) {
+        String currentText = output.getText();
+
+        if (isOperator(value)) {
+            // Prevent multiple operators in a row
+            if (currentText.isEmpty() || isOperator(Character.toString(currentText.charAt(currentText.length() - 1)))) {
+                return; // Do nothing if the last character is already an operator
+            }
+        }
+
         output.appendText(value);
     }
+    private boolean isOperator(String value) {
+        return value.equals("+") || value.equals("-") || value.equals("*") || value.equals("/");
+    }
+
     //Allows the clearing or undoing of those two actions to function
     public void handleDelete(ActionEvent event) {
         String currentText = output.getText();
@@ -152,6 +165,12 @@ public class ButtonController {
     public void handleNegativeToggle() {
         String currentText = output.getText();
         if (currentText.isEmpty()) return;
+
+        // Check if the last character is an operator; if so, return early
+        char lastChar = currentText.charAt(currentText.length() - 1);
+        if (isOperator(Character.toString(lastChar))) {
+            return; // Prevent toggling if the last character is an operator
+        }
 
         // Find the last operator position (to get last number)
         int lastOperatorIndex = -1;
