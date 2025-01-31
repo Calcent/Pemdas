@@ -89,41 +89,41 @@
          <children>
           <AnchorPane maxHeight="-1.0" maxWidth="-1.0" prefHeight="382.0" prefWidth="722.0">
             <children>
-                  <ImageView fitHeight="375.0" fitWidth="499.0" layoutX="-1.0" layoutY="-2.0" pickOnBounds="true">
+                  <ImageView fitHeight="380.0" fitWidth="525.0" layoutX="-25.0" layoutY="-2.0" pickOnBounds="true">
                      <image>
                         <Image url="@calculatorBackground.png" />
                      </image>
                   </ImageView>
-                  <TextArea fx:id="output" layoutX="7.0" prefHeight="75.0" prefWidth="480.0" />
-                  <Button fx:id="equals" layoutX="397.0" layoutY="325.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="=" />
-                  <Button fx:id="plus" layoutX="397.0" layoutY="279.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="+" />
-                  <Button fx:id="minus" layoutX="397.0" layoutY="232.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="-" />
-                  <Button fx:id="times" layoutX="397.0" layoutY="184.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="x" />
-                  <Button fx:id="divides" layoutX="397.0" layoutY="137.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="/" />
-                  <Button fx:id="undo" layoutX="397.0" layoutY="88.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="&lt;-" />
-                  <Button fx:id="decimal" layoutX="294.0" layoutY="325.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="." />
-                  <Button fx:id="three" layoutX="294.0" layoutY="279.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="3" />
-                  <Button fx:id="six" layoutX="294.0" layoutY="232.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="6" />
-                  <Button fx:id="nine" layoutX="294.0" layoutY="184.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="9" />
-                  <Button fx:id="zero" layoutX="197.0" layoutY="325.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="0" />
-                  <Button fx:id="negativeToggle" layoutX="101.0" layoutY="325.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="+/-" />
-                  <Button fx:id="two" layoutX="197.0" layoutY="279.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="2" />
-                  <Button fx:id="one" layoutX="101.0" layoutY="279.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="1" />
-                  <Button fx:id="five" layoutX="197.0" layoutY="232.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="5" />
-                  <Button fx:id="four" layoutX="101.0" layoutY="232.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="4" />
-                  <Button fx:id="eight" layoutX="197.0" layoutY="184.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="8" />
-                  <Button fx:id="seven" layoutX="101.0" layoutY="184.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="7" />
-                  <Button fx:id="rightParentheses" layoutX="197.0" layoutY="137.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text=")" />
-                  <Button fx:id="leftParentheses" layoutX="101.0" layoutY="137.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="(" />
-                  <Button fx:id="clear" layoutX="294.0" layoutY="88.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="C" />
-                  <Button fx:id="rightCurrlyBracket" layoutX="197.0" layoutY="88.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="}" />
-                  <Button fx:id="leftCurrlyBracket" layoutX="101.0" layoutY="88.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="{" />
-                  <Button fx:id="tangent" layoutX="7.0" layoutY="325.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="tan()" />
-                  <Button fx:id="cosine" layoutX="7.0" layoutY="279.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="cos()" />
-                  <Button fx:id="sine" layoutX="7.0" layoutY="232.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="sin()" />
-                  <Button fx:id="ln" layoutX="7.0" layoutY="184.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="ln" />
-                  <Button fx:id="log" layoutX="7.0" layoutY="137.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="log10" />
-                  <Button fx:id="exponent" layoutX="294.0" layoutY="137.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="n^" />
+                  <TextArea fx:id="output" layoutX="7.0" layoutY="3.0" prefHeight="75.0" prefWidth="487.0" />
+                  <Button fx:id="equals" layoutX="404.0" layoutY="328.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="=" />
+                  <Button fx:id="plus" layoutX="404.0" layoutY="282.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="+" />
+                  <Button fx:id="minus" layoutX="404.0" layoutY="235.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="-" />
+                  <Button fx:id="times" layoutX="404.0" layoutY="187.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="x" />
+                  <Button fx:id="divides" layoutX="404.0" layoutY="140.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="/" />
+                  <Button fx:id="undo" layoutX="404.0" layoutY="91.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="&lt;-" />
+                  <Button fx:id="decimal" layoutX="301.0" layoutY="328.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="." />
+                  <Button fx:id="three" layoutX="301.0" layoutY="282.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="3" />
+                  <Button fx:id="six" layoutX="301.0" layoutY="235.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="6" />
+                  <Button fx:id="nine" layoutX="301.0" layoutY="187.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="9" />
+                  <Button fx:id="zero" layoutX="204.0" layoutY="328.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="0" />
+                  <Button fx:id="negativeToggle" layoutX="108.0" layoutY="328.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="+/-" />
+                  <Button fx:id="two" layoutX="204.0" layoutY="282.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="2" />
+                  <Button fx:id="one" layoutX="108.0" layoutY="282.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="1" />
+                  <Button fx:id="five" layoutX="204.0" layoutY="235.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="5" />
+                  <Button fx:id="four" layoutX="108.0" layoutY="235.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="4" />
+                  <Button fx:id="eight" layoutX="204.0" layoutY="187.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="8" />
+                  <Button fx:id="seven" layoutX="108.0" layoutY="187.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="7" />
+                  <Button fx:id="rightParentheses" layoutX="204.0" layoutY="140.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text=")" />
+                  <Button fx:id="leftParentheses" layoutX="108.0" layoutY="140.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="(" />
+                  <Button fx:id="clear" layoutX="301.0" layoutY="91.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="C" />
+                  <Button fx:id="rightCurrlyBracket" layoutX="204.0" layoutY="91.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="}" />
+                  <Button fx:id="leftCurrlyBracket" layoutX="108.0" layoutY="91.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="{" />
+                  <Button fx:id="tangent" layoutX="6.0" layoutY="328.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="tan()" />
+                  <Button fx:id="cosine" layoutX="6.0" layoutY="282.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="cos()" />
+                  <Button fx:id="sine" layoutX="6.0" layoutY="235.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="sin()" />
+                  <Button fx:id="ln" layoutX="7.0" layoutY="187.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="ln" />
+                  <Button fx:id="log" layoutX="7.0" layoutY="140.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="log10" />
+                  <Button fx:id="exponent" layoutX="301.0" layoutY="140.0" mnemonicParsing="false" prefHeight="40.0" prefWidth="90.0" text="n^" />
             </children>
           </AnchorPane>
          </children>
