@@ -2,7 +2,7 @@ package com.example.pemdas_calculator;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
-import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 
 public class ButtonController {
 
@@ -58,7 +58,7 @@ public class ButtonController {
     private Button one;
 
     @FXML
-    private TextArea output;
+    private TextField output;
 
     @FXML
     private Button plus;
