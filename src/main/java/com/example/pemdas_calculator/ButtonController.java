@@ -125,6 +125,9 @@ public class ButtonController {
         leftCurrlyBracket.setOnAction(event -> handleButtonClick("{"));
         rightCurrlyBracket.setOnAction(event -> handleButtonClick("}"));
 
+        //handles decimal
+        decimal.setOnAction(event -> handleDecimal());
+
         //handles the undo and clear button
         undo.setOnAction(this::handleDelete);
         clear.setOnAction(this::handleDelete);
@@ -178,5 +181,33 @@ public class ButtonController {
 
         // Update the display
         output.setText(newText);
+    }
+
+    //Handles the decimal, so they can't be used more than once per number
+    private void handleDecimal() {
+        String currentText = output.getText();
+
+        if (currentText.isEmpty()) {
+            output.setText("0.");
+            return;
+        }
+
+        // Find the last number in the expression
+        int lastOperatorIndex = -1;
+        for (int i = currentText.length() - 1; i >= 0; i--) {
+            char c = currentText.charAt(i);
+            if (c == '+' || c == '-' || c == '*' || c == '/') {
+                lastOperatorIndex = i;
+                break;
+            }
+        }
+
+        // Extract the last number
+        String lastNumber = currentText.substring(lastOperatorIndex + 1).trim();
+
+        // Check if the last number already has a decimal
+        if (!lastNumber.contains(".")) {
+            output.setText(currentText + ".");
+        }
     }
 }
