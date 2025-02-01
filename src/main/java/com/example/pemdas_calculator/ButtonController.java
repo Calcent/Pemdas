@@ -138,6 +138,9 @@ public class ButtonController {
         cosine.setOnAction(event -> handleButtonClick("cos("));
         tangent.setOnAction(event -> handleButtonClick("tan("));
 
+        //handles exponent values
+        exponent.setOnAction(event -> handleButtonClick("^"));
+
         //handles the undo and clear button
         undo.setOnAction(this::handleDelete);
         clear.setOnAction(this::handleDelete);
@@ -152,10 +155,10 @@ public class ButtonController {
             currentText = autoCloseBrackets(currentText);
             currentText = preprocessExpression(currentText);
 
-            // ✅ Ensure functions (sin, cos, etc.) are evaluated before numbers & operators
+            // ✅ Process functions **and exponentiation**
             currentText = evaluateFunctions(currentText);
 
-            // ✅ Now, solve parentheses
+            // ✅ Solve parentheses `()`
             while (currentText.contains("(")) {
                 currentText = evaluateInnermostExpression(currentText, '(', ')');
             }
@@ -224,8 +227,13 @@ public class ButtonController {
     private double evaluateExpression(String expression) {
         expression = preprocessExpression(expression); // Ensure negatives & multiplication are corrected
 
-        // Handle sin(), cos(), tan() before processing numbers/operators
+        // ✅ Process functions like sin(), cos(), log() first
         expression = evaluateFunctions(expression);
+
+        // ✅ Handle exponentiation (right-associative, highest precedence)
+        if (expression.contains("^")) {
+            expression = evaluateFunctions(expression);
+        }
 
         Stack<Double> numbers = new Stack<>();
         Stack<Character> operators = new Stack<>();
@@ -276,7 +284,7 @@ public class ButtonController {
                 continue;
             }
 
-            // Handle Operators (+, -, *, /, ^)
+            // Handle Operators (+, -, *, /)
             if (isOperator(Character.toString(c))) {
                 while (!operators.isEmpty() && precedence(operators.peek()) >= precedence(c)) {
                     numbers.push(applyOperation(operators.pop(), numbers.pop(), numbers.pop()));
@@ -295,54 +303,89 @@ public class ButtonController {
         return numbers.pop();
     }
     private String evaluateFunctions(String expression) {
-        // Map of function names to their corresponding Java methods
-        String[] functions = {"sin", "cos", "tan", "log", "ln"}; // ✅ Changed "log10" to "log"
+        String[] functions = {"sin", "cos", "tan", "log", "ln"};
 
+        // ✅ Process functions like sin(), cos(), log(), ln()
         for (String func : functions) {
             while (expression.contains(func + "(")) {
-                int startIndex = expression.lastIndexOf(func + "("); // Find last occurrence
+                int startIndex = expression.lastIndexOf(func + "(");
                 int endIndex = findClosingBracket(expression, startIndex + func.length(), '(', ')');
 
                 if (endIndex == -1) return expression; // No matching closing parenthesis
 
-                String inside = expression.substring(startIndex + func.length() + 1, endIndex); // Extract inner expression
-                double value = evaluateExpression(inside); // ✅ Compute the argument first
+                String inside = expression.substring(startIndex + func.length() + 1, endIndex);
+                double value = evaluateExpression(inside); // ✅ Evaluate function argument
                 double result = 0;
 
-                // Compute based on function type
                 switch (func) {
-                    case "sin":
-                        result = Math.sin(Math.toRadians(value)); // Convert degrees to radians
-                        break;
-                    case "cos":
-                        result = Math.cos(Math.toRadians(value)); // Convert degrees to radians
-                        break;
-                    case "tan":
-                        result = Math.tan(Math.toRadians(value)); // Convert degrees to radians
-                        break;
-                    case "log": // ✅ Now "log(x)" is the same as "log10(x)"
-                        result = Math.log10(value);
-                        break;
-                    case "ln":
-                        result = Math.log(value); // Natural log (base e)
-                        break;
+                    case "sin": result = Math.sin(Math.toRadians(value)); break;
+                    case "cos": result = Math.cos(Math.toRadians(value)); break;
+                    case "tan": result = Math.tan(Math.toRadians(value)); break;
+                    case "log": result = Math.log10(value); break;
+                    case "ln": result = Math.log(value); break;
                 }
 
-                // Replace function call with computed result
+                // ✅ Replace function call with computed result
                 expression = expression.substring(0, startIndex) + result + expression.substring(endIndex + 1);
             }
+        }
+
+        // ✅ Process exponentiation (`^`) **right to left**
+        while (expression.contains("^")) {
+            int lastIndex = expression.lastIndexOf("^"); // Find last `^` (rightmost first)
+
+            // ✅ Find base (left-side number or expression)
+            int baseStart = lastIndex - 1;
+            if (expression.charAt(baseStart) == ')') {
+                baseStart = findOpeningBracket(expression, baseStart, '(', ')'); // Handle expressions like `(2+3)^2`
+            } else {
+                while (baseStart >= 0 && (Character.isDigit(expression.charAt(baseStart)) || expression.charAt(baseStart) == '.' || expression.charAt(baseStart) == '-')) {
+                    baseStart--;
+                }
+                baseStart++;
+            }
+
+            // ✅ Find exponent (right-side number or expression)
+            int expStart = lastIndex + 1;
+            int expEnd = expStart;
+            if (expression.charAt(expStart) == '(') {
+                expEnd = findClosingBracket(expression, expStart, '(', ')') + 1; // Handle expressions like `2^(1+1)`
+            } else {
+                while (expEnd < expression.length() && (Character.isDigit(expression.charAt(expEnd)) || expression.charAt(expEnd) == '.')) {
+                    expEnd++;
+                }
+            }
+
+            // ✅ Extract base and exponent
+            double base = evaluateExpression(expression.substring(baseStart, lastIndex)); // Base must be evaluated
+            double exponent = evaluateExpression(expression.substring(expStart, expEnd)); // Exponent must be evaluated
+
+            // ✅ Compute power
+            double result = Math.pow(base, exponent);
+
+            // ✅ Replace exponentiation part with computed result
+            expression = expression.substring(0, baseStart) + result + expression.substring(expEnd);
         }
 
         return expression;
     }
 
-    // Finds the closing bracket for a given opening bracket
+    // Finds the closing bracket for a given opening bracket, and the opening bracket for a given closed bracket
     private int findClosingBracket(String expression, int openIndex, char open, char close) {
         int balance = 0;
         for (int i = openIndex; i < expression.length(); i++) {
             if (expression.charAt(i) == open) balance++;
             if (expression.charAt(i) == close) balance--;
             if (balance == 0) return i;
+        }
+        return -1; // No matching bracket found
+    }
+    private int findOpeningBracket(String expression, int closeIndex, char open, char close) {
+        int balance = 0;
+        for (int i = closeIndex; i >= 0; i--) {
+            if (expression.charAt(i) == close) balance++;
+            if (expression.charAt(i) == open) balance--;
+            if (balance == 0) return i; // Found the matching open bracket
         }
         return -1; // No matching bracket found
     }
@@ -395,6 +438,17 @@ public class ButtonController {
             // Prevent multiple operators in a row
             if (currentText.isEmpty() || isOperator(Character.toString(currentText.charAt(currentText.length() - 1)))) {
                 return; // Do nothing if the last character is already an operator
+            }
+        }
+
+        //prevents an exponent from being used in the wrong spot
+        if (value.equals("^")) {
+            if (currentText.isEmpty()) {
+                return;
+            }
+            char lastChar = currentText.charAt(currentText.length() - 1);
+            if (!Character.isDigit(lastChar) && lastChar != ')') {
+                return;
             }
         }
 
