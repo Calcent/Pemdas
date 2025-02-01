@@ -4,9 +4,6 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.event.ActionEvent;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
 import java.util.Stack;
 
 public class ButtonController {
@@ -101,11 +98,11 @@ public class ButtonController {
     @FXML
     private Button zero;
 
-    //utilized chatgpt for syntax as I don't know this type of programming
     //initilize all buttons
     public void initialize() {
         //handles the equals function
         equals.setOnAction(event -> handleEquals());
+
         //handles numbers
         zero.setOnAction(event -> handleButtonClick("0"));
         one.setOnAction(event -> handleButtonClick("1"));
@@ -134,6 +131,13 @@ public class ButtonController {
         //handles decimal
         decimal.setOnAction(event -> handleDecimal());
 
+        //handles other math stuff
+        log.setOnAction(event -> handleButtonClick("log("));
+        ln.setOnAction(event -> handleButtonClick("ln("));
+        sine.setOnAction(event -> handleButtonClick("sin("));
+        cosine.setOnAction(event -> handleButtonClick("cos("));
+        tangent.setOnAction(event -> handleButtonClick("tan("));
+
         //handles the undo and clear button
         undo.setOnAction(this::handleDelete);
         clear.setOnAction(this::handleDelete);
@@ -145,32 +149,29 @@ public class ButtonController {
         if (currentText.isEmpty()) return;
 
         try {
-            // Step 1: Automatically close any unclosed parentheses or curly brackets
             currentText = autoCloseBrackets(currentText);
-
-            // Step 2: Preprocess to simplify negatives and add explicit multiplication
             currentText = preprocessExpression(currentText);
 
-            // Step 3: Solve Parentheses `()`
+            // ✅ Ensure functions (sin, cos, etc.) are evaluated before numbers & operators
+            currentText = evaluateFunctions(currentText);
+
+            // ✅ Now, solve parentheses
             while (currentText.contains("(")) {
                 currentText = evaluateInnermostExpression(currentText, '(', ')');
             }
 
-            // Step 4: Solve Curly Brackets `{}` (After Parentheses)
+            // ✅ Solve curly brackets `{}` (if any)
             while (currentText.contains("{")) {
                 currentText = evaluateInnermostExpression(currentText, '{', '}');
             }
 
-            // Step 5: Solve the remaining expression using PEMDAS
+            // ✅ Finally, evaluate the numerical expression
             double result = evaluateExpression(currentText);
-
-            // Display result in output field
             output.setText(String.valueOf(result));
         } catch (Exception e) {
             output.setText("Error");
         }
     }
-
     private String autoCloseBrackets(String expression) {
         int openParentheses = 0;
         int openCurlyBrackets = 0;
@@ -197,7 +198,6 @@ public class ButtonController {
 
         return expression;
     }
-
     private String evaluateInnermostExpression(String expression, char open, char close) {
         int openIndex = expression.lastIndexOf(open);
         if (openIndex == -1) return expression; // No matching brackets
@@ -221,9 +221,11 @@ public class ButtonController {
 
         return before + innerResult + after;
     }
-
     private double evaluateExpression(String expression) {
         expression = preprocessExpression(expression); // Ensure negatives & multiplication are corrected
+
+        // Handle sin(), cos(), tan() before processing numbers/operators
+        expression = evaluateFunctions(expression);
 
         Stack<Double> numbers = new Stack<>();
         Stack<Character> operators = new Stack<>();
@@ -292,6 +294,47 @@ public class ButtonController {
 
         return numbers.pop();
     }
+    private String evaluateFunctions(String expression) {
+        // Map of function names to their corresponding Java methods
+        String[] functions = {"sin", "cos", "tan", "log", "ln"}; // ✅ Changed "log10" to "log"
+
+        for (String func : functions) {
+            while (expression.contains(func + "(")) {
+                int startIndex = expression.lastIndexOf(func + "("); // Find last occurrence
+                int endIndex = findClosingBracket(expression, startIndex + func.length(), '(', ')');
+
+                if (endIndex == -1) return expression; // No matching closing parenthesis
+
+                String inside = expression.substring(startIndex + func.length() + 1, endIndex); // Extract inner expression
+                double value = evaluateExpression(inside); // ✅ Compute the argument first
+                double result = 0;
+
+                // Compute based on function type
+                switch (func) {
+                    case "sin":
+                        result = Math.sin(Math.toRadians(value)); // Convert degrees to radians
+                        break;
+                    case "cos":
+                        result = Math.cos(Math.toRadians(value)); // Convert degrees to radians
+                        break;
+                    case "tan":
+                        result = Math.tan(Math.toRadians(value)); // Convert degrees to radians
+                        break;
+                    case "log": // ✅ Now "log(x)" is the same as "log10(x)"
+                        result = Math.log10(value);
+                        break;
+                    case "ln":
+                        result = Math.log(value); // Natural log (base e)
+                        break;
+                }
+
+                // Replace function call with computed result
+                expression = expression.substring(0, startIndex) + result + expression.substring(endIndex + 1);
+            }
+        }
+
+        return expression;
+    }
 
     // Finds the closing bracket for a given opening bracket
     private int findClosingBracket(String expression, int openIndex, char open, char close) {
@@ -321,7 +364,7 @@ public class ButtonController {
 
         return expression;
     }
-    
+
     // Determines operator precedence
     private int precedence(char operator) {
         switch (operator) {
