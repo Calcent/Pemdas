@@ -145,20 +145,23 @@ public class ButtonController {
         if (currentText.isEmpty()) return;
 
         try {
-            // Preprocess to simplify double negatives before evaluation
+            // Step 1: Automatically close any unclosed parentheses or curly brackets
+            currentText = autoCloseBrackets(currentText);
+
+            // Step 2: Preprocess to simplify negatives and add explicit multiplication
             currentText = preprocessExpression(currentText);
 
-            // Step 1: Solve Parentheses `()`
+            // Step 3: Solve Parentheses `()`
             while (currentText.contains("(")) {
                 currentText = evaluateInnermostExpression(currentText, '(', ')');
             }
 
-            // Step 2: Solve Curly Brackets `{}` (After Parentheses)
+            // Step 4: Solve Curly Brackets `{}` (After Parentheses)
             while (currentText.contains("{")) {
                 currentText = evaluateInnermostExpression(currentText, '{', '}');
             }
 
-            // Step 3: Solve the remaining expression using PEMDAS
+            // Step 5: Solve the remaining expression using PEMDAS
             double result = evaluateExpression(currentText);
 
             // Display result in output field
@@ -166,6 +169,33 @@ public class ButtonController {
         } catch (Exception e) {
             output.setText("Error");
         }
+    }
+
+    private String autoCloseBrackets(String expression) {
+        int openParentheses = 0;
+        int openCurlyBrackets = 0;
+
+        // Count how many parentheses `{}` and `()` are unclosed
+        for (char c : expression.toCharArray()) {
+            if (c == '(') openParentheses++;
+            if (c == ')') openParentheses--;
+            if (c == '{') openCurlyBrackets++;
+            if (c == '}') openCurlyBrackets--;
+        }
+
+        // Auto-close unclosed `(` with `)`
+        while (openParentheses > 0) {
+            expression += ")";
+            openParentheses--;
+        }
+
+        // Auto-close unclosed `{` with `}`
+        while (openCurlyBrackets > 0) {
+            expression += "}";
+            openCurlyBrackets--;
+        }
+
+        return expression;
     }
 
     private String evaluateInnermostExpression(String expression, char open, char close) {
@@ -178,11 +208,23 @@ public class ButtonController {
         String innerExpression = expression.substring(openIndex + 1, closeIndex);
         double innerResult = evaluateExpression(innerExpression);
 
-        // Replace the evaluated part with the computed result
-        return expression.substring(0, openIndex) + innerResult + expression.substring(closeIndex + 1);
+        // **🚀 If `{}` is detected, enforce multiplication**
+        String before = openIndex > 0 ? expression.substring(0, openIndex) : "";
+        String after = closeIndex + 1 < expression.length() ? expression.substring(closeIndex + 1) : "";
+
+        if (open == '{' && !before.isEmpty() && Character.isDigit(before.charAt(before.length() - 1))) {
+            before += "*"; // Insert explicit multiplication before `{`
+        }
+        if (open == '{' && !after.isEmpty() && (Character.isDigit(after.charAt(0)) || after.charAt(0) == '(')) {
+            after = "*" + after; // Insert explicit multiplication after `}`
+        }
+
+        return before + innerResult + after;
     }
 
     private double evaluateExpression(String expression) {
+        expression = preprocessExpression(expression); // Ensure negatives & multiplication are corrected
+
         Stack<Double> numbers = new Stack<>();
         Stack<Character> operators = new Stack<>();
         int i = 0;
@@ -219,7 +261,7 @@ public class ButtonController {
                 continue;
             }
 
-            // Handle Parentheses and evaluate immediately
+            // Handle Parentheses
             if (c == '(') {
                 int closeIndex = findClosingBracket(expression, i, '(', ')');
                 if (closeIndex == -1) return 0; // Mismatched parentheses
@@ -263,15 +305,23 @@ public class ButtonController {
     }
 
     private String preprocessExpression(String expression) {
-        // Simplify multiple nested negatives
+        // **🚀 Fix Nested Negatives**
         while (expression.contains("(-(-")) {
             expression = expression.replace("(-(-", "");
             expression = expression.replace("))", "");
         }
 
+        // **🚀 Insert Explicit Multiplication for Parentheses and Curly Brackets**
+        expression = expression.replaceAll("(\\d)(\\()", "$1*(");  // 2(5) → 2*(5)
+        expression = expression.replaceAll("(\\))(\\d)", ")*$2");  // (2)5 → (2)*5
+        expression = expression.replaceAll("(\\d)(\\{)", "$1*{");  // 3{4} → 3*{4}
+        expression = expression.replaceAll("(\\})(\\d)", "}*$2");  // {3}4 → {3}*4
+        expression = expression.replaceAll("(\\))(\\{)", ")*{");   // (2){3} → (2)*{3}
+        expression = expression.replaceAll("(\\})(\\()", "}*(");   // {3}(4) → {3}*(4)
+
         return expression;
     }
-
+    
     // Determines operator precedence
     private int precedence(char operator) {
         switch (operator) {
@@ -324,16 +374,26 @@ public class ButtonController {
     }
     //Toggles the negative (utilized chatgpt for the logic)
     public void handleNegativeToggle() {
-        String currentText = output.getText();
+        String currentText = output.getText().trim();
         if (currentText.isEmpty()) return;
 
-        // Check if the last character is an operator; if so, return early
-        char lastChar = currentText.charAt(currentText.length() - 1);
-        if (isOperator(Character.toString(lastChar))) {
-            return; // Prevent toggling if the last character is an operator
+        // Case: If the last character is an open parenthesis `(` or `{`, insert `-` immediately
+        if (currentText.endsWith("(") || currentText.endsWith("{")) {
+            output.setText(currentText + "-");
+            return;
         }
 
-        // Find the last operator position (to get last number)
+        // Check if the entire input is a single number (not part of an expression)
+        try {
+            double number = Double.parseDouble(currentText);
+            number = -number; // Toggle sign
+            output.setText(String.valueOf(number)); // Update display
+            return;
+        } catch (NumberFormatException e) {
+            // If not a standalone number, continue checking expression
+        }
+
+        // Find the last operator position
         int lastOperatorIndex = -1;
         for (int i = currentText.length() - 1; i >= 0; i--) {
             char c = currentText.charAt(i);
@@ -343,39 +403,50 @@ public class ButtonController {
             }
         }
 
-        // Extract the last number
+        // Extract last number (including cases where it's inside parentheses `{}` or `()`)
         String lastNumber = currentText.substring(lastOperatorIndex + 1).trim();
 
-        // Ensure lastNumber is a valid number before toggling
-        if (lastNumber.isEmpty()) return;
-
-        // Fix for double negative cases
-        if (lastNumber.startsWith("(-(-") && lastNumber.endsWith("))")) {
-            // Convert (-(-X)) → X
-            lastNumber = lastNumber.substring(4, lastNumber.length() - 2);
-        } else if (lastNumber.startsWith("(-") && lastNumber.endsWith(")")) {
-            // Convert (-X) → X
-            lastNumber = lastNumber.substring(2, lastNumber.length() - 1);
-        } else if (lastNumber.startsWith("-")) {
-            // Convert -X → X
-            lastNumber = lastNumber.substring(1);
-        } else {
-            // Convert X → (-X)
-            lastNumber = "(-" + lastNumber + ")";
+        // **Case: Unclosed Parenthesis or Bracket with a Number (e.g., `(2` → `(-2` or `{2` → `{-2`)**
+        if ((lastNumber.startsWith("(") && !lastNumber.endsWith(")")) ||
+                (lastNumber.startsWith("{") && !lastNumber.endsWith("}"))) {
+            char bracketType = lastNumber.charAt(0); // Detect the bracket type `(` or `{`
+            output.setText(currentText.substring(0, lastOperatorIndex + 1) + bracketType + "-" + lastNumber.substring(1));
+            return;
         }
 
-        // Construct new expression
-        String newText;
+        // **Case: Completed Parentheses `(2)` → `(-2)`, `{2}` → `{-2}`**
+        if ((lastNumber.startsWith("(") && lastNumber.endsWith(")")) ||
+                (lastNumber.startsWith("{") && lastNumber.endsWith("}"))) {
+            char bracketType = lastNumber.charAt(0); // Preserve original bracket type
+            String innerValue = lastNumber.substring(1, lastNumber.length() - 1).trim();
+            try {
+                double num = Double.parseDouble(innerValue);
+                num = -num; // Toggle the sign
+                output.setText(currentText.substring(0, lastOperatorIndex + 1) + bracketType + num + bracketType);
+                return;
+            } catch (NumberFormatException ignored) {
+                // Continue to other cases if parsing fails
+            }
+        }
+
+        // **Case: Number at start of expression (no operators before it)**
         if (lastOperatorIndex == -1) {
-            // If it's the only number, update the whole text
-            newText = lastNumber;
-        } else {
-            // Otherwise, replace only the last number
-            newText = currentText.substring(0, lastOperatorIndex + 1) + lastNumber;
+            try {
+                double num = Double.parseDouble(lastNumber);
+                num = -num;
+                output.setText(String.valueOf(num)); // Directly update display
+            } catch (NumberFormatException ignored) {
+            }
+            return;
         }
 
-        // Update the display
-        output.setText(newText);
+        // **Case: Toggle last number in expression**
+        try {
+            double lastNum = Double.parseDouble(lastNumber);
+            lastNum = -lastNum;
+            output.setText(currentText.substring(0, lastOperatorIndex + 1) + lastNum);
+        } catch (NumberFormatException ignored) {
+        }
     }
 
     //Handles the decimal, so they can't be used more than once per number
