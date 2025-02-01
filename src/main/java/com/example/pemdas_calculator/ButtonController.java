@@ -155,31 +155,35 @@ public class ButtonController {
             currentText = autoCloseBrackets(currentText);
             currentText = preprocessExpression(currentText);
 
-            // ✅ Process functions **and exponentiation**
+            //Processes Functions
             currentText = evaluateFunctions(currentText);
 
-            // ✅ Solve parentheses `()`
+            //Makes parentheses work
             while (currentText.contains("(")) {
                 currentText = evaluateInnermostExpression(currentText, '(', ')');
             }
 
-            // ✅ Solve curly brackets `{}` (if any)
+            //Makes currly brackets work
             while (currentText.contains("{")) {
                 currentText = evaluateInnermostExpression(currentText, '{', '}');
             }
 
-            // ✅ Finally, evaluate the numerical expression
+            //Sends a call to evaluate the expression using a similar algorithm to the shunting-yard algorithm
             double result = evaluateExpression(currentText);
             output.setText(String.valueOf(result));
-        } catch (Exception e) {
-            output.setText("Error");
+        }
+        //throws error if anything goes wrong
+        catch (Exception e) {
+            output.setText("Syntax Error");
         }
     }
+
+    //Prevents application from crashing if you don't have a closed currly bracket and instead just inserts them
     private String autoCloseBrackets(String expression) {
         int openParentheses = 0;
         int openCurlyBrackets = 0;
 
-        // Count how many parentheses `{}` and `()` are unclosed
+        //Count how many parentheses `{}` and `()` are unclosed
         for (char c : expression.toCharArray()) {
             if (c == '(') openParentheses++;
             if (c == ')') openParentheses--;
@@ -187,13 +191,13 @@ public class ButtonController {
             if (c == '}') openCurlyBrackets--;
         }
 
-        // Auto-close unclosed `(` with `)`
+        //Auto-close unclosed `(` with `)`
         while (openParentheses > 0) {
             expression += ")";
             openParentheses--;
         }
 
-        // Auto-close unclosed `{` with `}`
+        //Auto-close unclosed `{` with `}`
         while (openCurlyBrackets > 0) {
             expression += "}";
             openCurlyBrackets--;
@@ -201,36 +205,41 @@ public class ButtonController {
 
         return expression;
     }
+
+    //Begins by evaluating every expression within the parentheses or brackets
     private String evaluateInnermostExpression(String expression, char open, char close) {
+        //handles the lack of a closing bracket
         int openIndex = expression.lastIndexOf(open);
-        if (openIndex == -1) return expression; // No matching brackets
-
+        if (openIndex == -1) return expression;
         int closeIndex = expression.indexOf(close, openIndex);
-        if (closeIndex == -1) return expression; // No closing bracket
+        if (closeIndex == -1) return expression;
 
+        //Calculates the expression
         String innerExpression = expression.substring(openIndex + 1, closeIndex);
         double innerResult = evaluateExpression(innerExpression);
 
-        // **🚀 If `{}` is detected, enforce multiplication**
+        //Allows expressions like 2(5) to evaluate properly as multiplication
         String before = openIndex > 0 ? expression.substring(0, openIndex) : "";
         String after = closeIndex + 1 < expression.length() ? expression.substring(closeIndex + 1) : "";
 
         if (open == '{' && !before.isEmpty() && Character.isDigit(before.charAt(before.length() - 1))) {
-            before += "*"; // Insert explicit multiplication before `{`
+            before += "*";
         }
         if (open == '{' && !after.isEmpty() && (Character.isDigit(after.charAt(0)) || after.charAt(0) == '(')) {
-            after = "*" + after; // Insert explicit multiplication after `}`
+            after = "*" + after;
         }
 
         return before + innerResult + after;
     }
-    private double evaluateExpression(String expression) {
-        expression = preprocessExpression(expression); // Ensure negatives & multiplication are corrected
 
-        // ✅ Process functions like sin(), cos(), log() first
+    //Evaluates the end result expression using a form of the shunting-yard algorithm provided by chatgpt
+    private double evaluateExpression(String expression) {
+        expression = preprocessExpression(expression); //Ensure negatives & multiplication are corrected
+
+        //Process functions like sin(), cos(), log() first
         expression = evaluateFunctions(expression);
 
-        // ✅ Handle exponentiation (right-associative, highest precedence)
+        //Handle exponentiation (right-associative, highest precedence)
         if (expression.contains("^")) {
             expression = evaluateFunctions(expression);
         }
@@ -242,13 +251,13 @@ public class ButtonController {
         while (i < expression.length()) {
             char c = expression.charAt(i);
 
-            // Skip spaces
+            //Skip spaces
             if (c == ' ') {
                 i++;
                 continue;
             }
 
-            // Handle negative numbers at the start or after an operator
+            //Handle negative numbers at the start or after an operator
             if (c == '-' && (i == 0 || isOperator(Character.toString(expression.charAt(i - 1))))) {
                 StringBuilder numBuffer = new StringBuilder("-");
                 i++; // Move past '-'
@@ -260,7 +269,7 @@ public class ButtonController {
                 continue;
             }
 
-            // Handle numbers (including decimals)
+            //Handle numbers (including decimals)
             if (Character.isDigit(c) || c == '.') {
                 StringBuilder numBuffer = new StringBuilder();
                 while (i < expression.length() && (Character.isDigit(expression.charAt(i)) || expression.charAt(i) == '.')) {
@@ -271,7 +280,7 @@ public class ButtonController {
                 continue;
             }
 
-            // Handle Parentheses
+            //Handle Parentheses
             if (c == '(') {
                 int closeIndex = findClosingBracket(expression, i, '(', ')');
                 if (closeIndex == -1) return 0; // Mismatched parentheses
@@ -284,7 +293,7 @@ public class ButtonController {
                 continue;
             }
 
-            // Handle Operators (+, -, *, /)
+            //Handle Operators (+, -, *, /)
             if (isOperator(Character.toString(c))) {
                 while (!operators.isEmpty() && precedence(operators.peek()) >= precedence(c)) {
                     numbers.push(applyOperation(operators.pop(), numbers.pop(), numbers.pop()));
@@ -295,26 +304,29 @@ public class ButtonController {
             i++;
         }
 
-        // Process remaining operators
+        //Process remaining operators
         while (!operators.isEmpty()) {
             numbers.push(applyOperation(operators.pop(), numbers.pop(), numbers.pop()));
         }
 
         return numbers.pop();
     }
+
+    //Evaluates the trigonometric, logorithmic, ln, and exponent functions. Provided by yours truely chatgpt with tinkering by me to fix a couple small issues
     private String evaluateFunctions(String expression) {
         String[] functions = {"sin", "cos", "tan", "log", "ln"};
 
-        // ✅ Process functions like sin(), cos(), log(), ln()
+        //Process functions like sin(), cos(), log(), ln()
         for (String func : functions) {
             while (expression.contains(func + "(")) {
                 int startIndex = expression.lastIndexOf(func + "(");
                 int endIndex = findClosingBracket(expression, startIndex + func.length(), '(', ')');
 
-                if (endIndex == -1) return expression; // No matching closing parenthesis
+                //No matching closing parenthesis
+                if (endIndex == -1) return expression;
 
                 String inside = expression.substring(startIndex + func.length() + 1, endIndex);
-                double value = evaluateExpression(inside); // ✅ Evaluate function argument
+                double value = evaluateExpression(inside);
                 double result = 0;
 
                 switch (func) {
@@ -325,19 +337,19 @@ public class ButtonController {
                     case "ln": result = Math.log(value); break;
                 }
 
-                // ✅ Replace function call with computed result
+                //Replace function call with computed result
                 expression = expression.substring(0, startIndex) + result + expression.substring(endIndex + 1);
             }
         }
 
-        // ✅ Process exponentiation (`^`) **right to left**
+        //Process exponentiation (`^`) **right to left**
         while (expression.contains("^")) {
             int lastIndex = expression.lastIndexOf("^"); // Find last `^` (rightmost first)
 
-            // ✅ Find base (left-side number or expression)
+            //Find base (left-side number or expression)
             int baseStart = lastIndex - 1;
             if (expression.charAt(baseStart) == ')') {
-                baseStart = findOpeningBracket(expression, baseStart, '(', ')'); // Handle expressions like `(2+3)^2`
+                baseStart = findOpeningBracket(expression, baseStart, '(', ')'); //Handle expressions like `(2+3)^2`
             } else {
                 while (baseStart >= 0 && (Character.isDigit(expression.charAt(baseStart)) || expression.charAt(baseStart) == '.' || expression.charAt(baseStart) == '-')) {
                     baseStart--;
@@ -345,7 +357,7 @@ public class ButtonController {
                 baseStart++;
             }
 
-            // ✅ Find exponent (right-side number or expression)
+            //Find exponent (right-side number or expression)
             int expStart = lastIndex + 1;
             int expEnd = expStart;
             if (expression.charAt(expStart) == '(') {
@@ -356,21 +368,21 @@ public class ButtonController {
                 }
             }
 
-            // ✅ Extract base and exponent
+            //Extract base and exponent
             double base = evaluateExpression(expression.substring(baseStart, lastIndex)); // Base must be evaluated
             double exponent = evaluateExpression(expression.substring(expStart, expEnd)); // Exponent must be evaluated
 
-            // ✅ Compute power
+            //Compute power
             double result = Math.pow(base, exponent);
 
-            // ✅ Replace exponentiation part with computed result
+            //Replace exponentiation part with computed result
             expression = expression.substring(0, baseStart) + result + expression.substring(expEnd);
         }
 
         return expression;
     }
 
-    // Finds the closing bracket for a given opening bracket, and the opening bracket for a given closed bracket
+    //Finds the closing bracket for a given opening bracket, and the opening bracket for a given closed bracket
     private int findClosingBracket(String expression, int openIndex, char open, char close) {
         int balance = 0;
         for (int i = openIndex; i < expression.length(); i++) {
@@ -378,7 +390,7 @@ public class ButtonController {
             if (expression.charAt(i) == close) balance--;
             if (balance == 0) return i;
         }
-        return -1; // No matching bracket found
+        return -1; //No matching bracket found
     }
     private int findOpeningBracket(String expression, int closeIndex, char open, char close) {
         int balance = 0;
@@ -387,17 +399,17 @@ public class ButtonController {
             if (expression.charAt(i) == open) balance--;
             if (balance == 0) return i; // Found the matching open bracket
         }
-        return -1; // No matching bracket found
+        return -1; //No matching bracket found
     }
 
     private String preprocessExpression(String expression) {
-        // **🚀 Fix Nested Negatives**
+        //Handles nested negatives
         while (expression.contains("(-(-")) {
             expression = expression.replace("(-(-", "");
             expression = expression.replace("))", "");
         }
 
-        // **🚀 Insert Explicit Multiplication for Parentheses and Curly Brackets**
+        //Insert Explicit Multiplication for Parentheses and Curly Brackets
         expression = expression.replaceAll("(\\d)(\\()", "$1*(");  // 2(5) → 2*(5)
         expression = expression.replaceAll("(\\))(\\d)", ")*$2");  // (2)5 → (2)*5
         expression = expression.replaceAll("(\\d)(\\{)", "$1*{");  // 3{4} → 3*{4}
@@ -408,7 +420,7 @@ public class ButtonController {
         return expression;
     }
 
-    // Determines operator precedence
+    //Determines operator precedence
     private int precedence(char operator) {
         switch (operator) {
             case '+': case '-': return 1;
@@ -418,7 +430,7 @@ public class ButtonController {
         }
     }
 
-    // Applies the mathematical operation
+    //Applies the mathematical operation
     private double applyOperation(char operator, double b, double a) {
         switch (operator) {
             case '+': return a + b;
@@ -435,13 +447,13 @@ public class ButtonController {
         String currentText = output.getText();
 
         if (isOperator(value)) {
-            // Prevent multiple operators in a row
+            //Prevent multiple operators in a row
             if (currentText.isEmpty() || isOperator(Character.toString(currentText.charAt(currentText.length() - 1)))) {
-                return; // Do nothing if the last character is already an operator
+                return;
             }
         }
 
-        //prevents an exponent from being used in the wrong spot
+        //Prevents an exponent from being used in the wrong spot
         if (value.equals("^")) {
             if (currentText.isEmpty()) {
                 return;
@@ -454,6 +466,8 @@ public class ButtonController {
 
         output.appendText(value);
     }
+
+    //Checks for operators
     private boolean isOperator(String value) {
         return value.equals("+") || value.equals("-") || value.equals("*") || value.equals("/");
     }
@@ -462,35 +476,37 @@ public class ButtonController {
     public void handleDelete(ActionEvent event) {
         String currentText = output.getText();
 
+        //Handles the undo button
         if (event.getSource() == undo && !currentText.isEmpty()) {
             output.setText(currentText.substring(0, currentText.length() - 1));
         }
+        //Handles the clear button
         else if (event.getSource() == clear) {
             output.clear();
         }
     }
-    //Toggles the negative (utilized chatgpt for the logic)
+    //Toggles the negative (utilized chatgpt for the logic) (this function was such a headache to get working)
     public void handleNegativeToggle() {
         String currentText = output.getText().trim();
         if (currentText.isEmpty()) return;
 
-        // Case: If the last character is an open parenthesis `(` or `{`, insert `-` immediately
+        //Case: If the last character is an open parenthesis `(` or `{`, insert `-` immediately
         if (currentText.endsWith("(") || currentText.endsWith("{")) {
             output.setText(currentText + "-");
             return;
         }
 
-        // Check if the entire input is a single number (not part of an expression)
+        //Check if the entire input is a single number (not part of an expression)
         try {
             double number = Double.parseDouble(currentText);
             number = -number; // Toggle sign
             output.setText(String.valueOf(number)); // Update display
             return;
         } catch (NumberFormatException e) {
-            // If not a standalone number, continue checking expression
+            //If not a standalone number, continue checking expression
         }
 
-        // Find the last operator position
+        //Find the last operator position
         int lastOperatorIndex = -1;
         for (int i = currentText.length() - 1; i >= 0; i--) {
             char c = currentText.charAt(i);
@@ -500,49 +516,50 @@ public class ButtonController {
             }
         }
 
-        // Extract last number (including cases where it's inside parentheses `{}` or `()`)
+        //Extract last number (including cases where it's inside parentheses `{}` or `()`)
         String lastNumber = currentText.substring(lastOperatorIndex + 1).trim();
 
-        // **Case: Unclosed Parenthesis or Bracket with a Number (e.g., `(2` → `(-2` or `{2` → `{-2`)**
+        //Case: Unclosed Parenthesis or Bracket with a Number (e.g., `(2` → `(-2` or `{2` → `{-2`)
         if ((lastNumber.startsWith("(") && !lastNumber.endsWith(")")) ||
                 (lastNumber.startsWith("{") && !lastNumber.endsWith("}"))) {
-            char bracketType = lastNumber.charAt(0); // Detect the bracket type `(` or `{`
+            char bracketType = lastNumber.charAt(0); //Detect the bracket type `(` or `{`
             output.setText(currentText.substring(0, lastOperatorIndex + 1) + bracketType + "-" + lastNumber.substring(1));
             return;
         }
 
-        // **Case: Completed Parentheses `(2)` → `(-2)`, `{2}` → `{-2}`**
+        //Case: Completed Parentheses `(2)` → `(-2)`, `{2}` → `{-2}`
         if ((lastNumber.startsWith("(") && lastNumber.endsWith(")")) ||
                 (lastNumber.startsWith("{") && lastNumber.endsWith("}"))) {
             char bracketType = lastNumber.charAt(0); // Preserve original bracket type
             String innerValue = lastNumber.substring(1, lastNumber.length() - 1).trim();
             try {
                 double num = Double.parseDouble(innerValue);
-                num = -num; // Toggle the sign
+                num = -num; //Toggle the sign
                 output.setText(currentText.substring(0, lastOperatorIndex + 1) + bracketType + num + bracketType);
                 return;
             } catch (NumberFormatException ignored) {
-                // Continue to other cases if parsing fails
+                //Continue to other cases if parsing fails
             }
         }
 
-        // **Case: Number at start of expression (no operators before it)**
+        //Case: Number at start of expression (no operators before it)
         if (lastOperatorIndex == -1) {
             try {
                 double num = Double.parseDouble(lastNumber);
                 num = -num;
-                output.setText(String.valueOf(num)); // Directly update display
+                output.setText(String.valueOf(num)); //Directly update display
             } catch (NumberFormatException ignored) {
             }
             return;
         }
 
-        // **Case: Toggle last number in expression**
+        //Case: Toggle last number in expression
         try {
             double lastNum = Double.parseDouble(lastNumber);
             lastNum = -lastNum;
             output.setText(currentText.substring(0, lastOperatorIndex + 1) + lastNum);
-        } catch (NumberFormatException ignored) {
+        }
+        catch (NumberFormatException ignored) {
         }
     }
 
@@ -555,7 +572,7 @@ public class ButtonController {
             return;
         }
 
-        // Find the last number in the expression
+        //Find the last number in the expression
         int lastOperatorIndex = -1;
         for (int i = currentText.length() - 1; i >= 0; i--) {
             char c = currentText.charAt(i);
@@ -565,10 +582,10 @@ public class ButtonController {
             }
         }
 
-        // Extract the last number
+        //Extract the last number
         String lastNumber = currentText.substring(lastOperatorIndex + 1).trim();
 
-        // Check if the last number already has a decimal
+        //Check if the last number already has a decimal
         if (!lastNumber.contains(".")) {
             output.setText(currentText + ".");
         }
