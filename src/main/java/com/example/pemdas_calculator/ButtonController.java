@@ -109,6 +109,9 @@ public class ButtonController {
     private Button tangent;
 
     @FXML
+    private Button testExpressions;
+
+    @FXML
     private Button three;
 
     @FXML
