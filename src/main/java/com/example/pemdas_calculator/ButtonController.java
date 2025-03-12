@@ -12,6 +12,7 @@ import java.util.Stack;
 import java.util.EmptyStackException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 // Java regex imports for expression validation
 import java.util.regex.Pattern;
@@ -175,17 +176,61 @@ public class ButtonController {
     }
 
     public void handleRandomGeneration(String type) {
+        Random random = new Random();
         switch (type) {
             case "correct":
-                // Generate a syntactically and semantically correct expression
-                errorLog.appendText("Generated correct expression\n");
+                StringBuilder expression = new StringBuilder();
+                // Generate a random number of tokens (between 3 and 7 tokens)
+                int tokenCount = random.nextInt(5) + 3; // yields a value from 3 to 7
+
+                for (int i = 0; i < tokenCount; i++) {
+                    String token = "";
+                    // 50% chance to wrap the token with a function (log, ln, sin, cos, or tan)
+                    if (random.nextDouble() < 0.5) {
+                        String[] functions = { "log", "ln", "sin", "cos", "tan" };
+                        String func = functions[random.nextInt(functions.length)];
+                        // For log and ln, ensure a positive argument; for trigonometric functions, any number works
+                        double arg = random.nextDouble() * 100 + 1; // ensures the argument is > 0
+                        token = func + "(" + String.format("%.2f", arg) + ")";
+                    } else {
+                        // Generate a plain number (either integer or decimal)
+                        if (random.nextBoolean()) {
+                            token = String.valueOf(random.nextInt(100));
+                        } else {
+                            token = String.format("%.2f", random.nextDouble() * 100);
+                        }
+                    }
+
+                    // With a 30% chance, append an exponentiation operator and an exponent (e.g. n^m)
+                    if (random.nextDouble() < 0.3) {
+                        token += "^";
+                        // Use an exponent value between 1 and 10 (integer)
+                        token += String.valueOf(random.nextInt(10) + 1);
+                    }
+
+                    expression.append(token);
+
+                    // Append an operator if this is not the last token
+                    if (i < tokenCount - 1) {
+                        String[] operators = { "+", "-", "*", "/" };
+                        expression.append(operators[random.nextInt(operators.length)]);
+                    }
+                }
+
+                // Optionally wrap the entire expression in parentheses 50% of the time
+                if (random.nextBoolean()) {
+                    expression.insert(0, "(");
+                    expression.append(")");
+                }
+
+                output.setText(expression.toString());
                 break;
             case "syntactical":
-                // Generate an expression with random syntactical errors
+                //Generate an expression with random syntactical errors
                 errorLog.appendText("Generated syntactical expression\n");
                 break;
             case "random":
-                // Generate a completely random expression
+                //Generate a completely random expression
                 errorLog.appendText("Generated random expression\n");
                 break;
             default:
@@ -318,10 +363,14 @@ public class ButtonController {
         }
 
         // 6. Validate unsupported characters.
-        Pattern allowedPattern = Pattern.compile("[^0-9A-Za-z+\\-*/().{}\\s]");
+        Pattern allowedPattern = Pattern.compile("[^0-9A-Za-z+\\-*/^().{}\\s]");
         matcher = allowedPattern.matcher(expression);
         while (matcher.find()) {
             errors.add("Unsupported character detected: '" + matcher.group() + "'");
+        }
+
+        if (expression.contains("Infinity")) {
+            errors.add("Infinity: Expression value too extreme");
         }
 
         return errors;
@@ -510,35 +559,48 @@ public class ButtonController {
 
         // Process exponentiation and return the modified expression
         while (expression.contains("^")) {
-            int lastIndex = expression.lastIndexOf("^"); // Evaluate right-to-left for exponentiation
+            int lastIndex = expression.lastIndexOf("^"); // Find rightmost '^'
 
-            // Determine base
+            // Find base (left-side number or expression)
             int baseStart = lastIndex - 1;
             if (expression.charAt(baseStart) == ')') {
+                // If the character is ')', find the matching '('
                 baseStart = findOpeningBracket(expression, baseStart, '(', ')');
             } else {
-                while (baseStart >= 0 && (Character.isDigit(expression.charAt(baseStart)) || expression.charAt(baseStart) == '.' || expression.charAt(baseStart) == '-')) {
+                // Move left to capture digits and decimals.
+                // Include '-' only if it’s a unary minus (i.e. either at the very start or preceded by an operator)
+                while (baseStart >= 0 && (
+                        Character.isDigit(expression.charAt(baseStart)) ||
+                                expression.charAt(baseStart) == '.'
+                                || (expression.charAt(baseStart) == '-' &&
+                                (baseStart == 0 || isOperator(Character.toString(expression.charAt(baseStart - 1))))
+                        )
+                )) {
                     baseStart--;
                 }
-                baseStart++;
+                baseStart++; // Adjust to the actual start of the base
             }
 
-            // Determine exponent
+            // Find exponent (right-side number or expression)
             int expStart = lastIndex + 1;
             int expEnd = expStart;
             if (expression.charAt(expStart) == '(') {
                 expEnd = findClosingBracket(expression, expStart, '(', ')') + 1;
             } else {
-                while (expEnd < expression.length() && (Character.isDigit(expression.charAt(expEnd)) || expression.charAt(expEnd) == '.')) {
+                while (expEnd < expression.length() &&
+                        (Character.isDigit(expression.charAt(expEnd)) || expression.charAt(expEnd) == '.'
+                                || (expression.charAt(expEnd) == '-' && expEnd == lastIndex + 1))) {
                     expEnd++;
                 }
             }
 
+            // Evaluate the base and exponent parts
             double base = evaluateExpression(expression.substring(baseStart, lastIndex));
             double exponent = evaluateExpression(expression.substring(expStart, expEnd));
-            double powerResult = Math.pow(base, exponent);
+            double result = Math.pow(base, exponent);
 
-            expression = expression.substring(0, baseStart) + powerResult + expression.substring(expEnd);
+            // Replace the exponentiation portion with the computed result
+            expression = expression.substring(0, baseStart) + result + expression.substring(expEnd);
         }
         return expression;
     }
