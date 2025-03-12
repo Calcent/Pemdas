@@ -2,9 +2,7 @@ package com.example.pemdas_calculator;
 
 // JavaFX imports for UI elements and event handling
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
-import javafx.scene.control.TextField;
-import javafx.scene.control.TextArea;
+import javafx.scene.control.*;
 import javafx.event.ActionEvent;
 
 // Java utility imports for data structures and exception handling
@@ -58,6 +56,9 @@ public class ButtonController {
 
     @FXML
     private Button genRandom;
+
+    @FXML
+    private Spinner<Integer> generationAmount;
 
     @FXML
     private Button leftCurrlyBracket;
@@ -173,105 +174,153 @@ public class ButtonController {
         genCorrect.setOnAction(event -> handleRandomGeneration("correct"));
         genRandom.setOnAction(event -> handleRandomGeneration("random"));
         genRanSyntactical.setOnAction(event -> handleRandomGeneration("syntactical"));
+        SpinnerValueFactory<Integer> valueFactory =
+                new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 100, 10);
+        generationAmount.setValueFactory(valueFactory);
     }
 
     public void handleRandomGeneration(String type) {
         Random random = new Random();
         switch (type) {
+            //generation code created by chatGPT
             case "correct":
-                StringBuilder expression = new StringBuilder();
-                // Generate a random number of tokens (between 3 and 7 tokens)
-                int tokenCount = random.nextInt(5) + 3; // yields a value from 3 to 7
+                //Get the number of expressions to generate from the spinner.
+                int count = generationAmount.getValue();
+                //Clear the errorLog so only new outputs are shown.
+                errorLog.clear();
+                for (int i = 0; i < count; i++) {
+                    StringBuilder expression = new StringBuilder();
+                    //Randomly decide on a token count between 3 and 7.
+                    int tokenCount = random.nextInt(5) + 3; // yields 3 to 7 tokens
 
-                for (int i = 0; i < tokenCount; i++) {
+                    //Arrays for functions and operators.
+                    String[] functions = { "log", "ln", "sin", "cos", "tan" };
+                    String[] operators = { "+", "-", "*", "/" };
+
+                    // --- Generate the first token normally ---
                     String token = "";
-                    // 50% chance to wrap the token with a function (log, ln, sin, cos, or tan)
                     if (random.nextDouble() < 0.5) {
-                        String[] functions = { "log", "ln", "sin", "cos", "tan" };
+                        //Function-wrapped token (ensuring positive argument)
                         String func = functions[random.nextInt(functions.length)];
-                        // For log and ln, ensure a positive argument; for trigonometric functions, any number works
-                        double arg = random.nextDouble() * 100 + 1; // ensures the argument is > 0
+                        double arg = random.nextDouble() * 100 + 1;
                         token = func + "(" + String.format("%.2f", arg) + ")";
                     } else {
-                        // Generate a plain number (either integer or decimal)
+                        //Plain number token (can be 0 here because it's not following a division)
                         if (random.nextBoolean()) {
                             token = String.valueOf(random.nextInt(100));
                         } else {
                             token = String.format("%.2f", random.nextDouble() * 100);
                         }
                     }
-
-                    // With a 30% chance, append an exponentiation operator and an exponent (e.g. n^m)
-                    if (random.nextDouble() < 0.3) {
-                        token += "^";
-                        // Use an exponent value between 1 and 10 (integer)
-                        token += String.valueOf(random.nextInt(10) + 1);
-                    }
-
                     expression.append(token);
 
-                    // Append an operator if this is not the last token
-                    if (i < tokenCount - 1) {
-                        String[] operators = { "+", "-", "*", "/" };
-                        expression.append(operators[random.nextInt(operators.length)]);
+                    // --- Generate remaining tokens with an operator preceding each ---
+                    for (int j = 1; j < tokenCount; j++) {
+                        //Choose a random operator.
+                        String op = operators[random.nextInt(operators.length)];
+                        expression.append(op);
+
+                        String nextToken = "";
+                        //If the operator is division, force a plain number that is not zero.
+                        if (op.equals("/")) {
+                            boolean isInteger = random.nextBoolean();
+                            if (isInteger) {
+                                int num;
+                                do {
+                                    num = random.nextInt(100);
+                                } while (num == 0);
+                                nextToken = String.valueOf(num);
+                            } else {
+                                double num;
+                                do {
+                                    num = random.nextDouble() * 100;
+                                } while (num == 0.0);
+                                nextToken = String.format("%.2f", num);
+                            }
+                        } else {
+                            //Otherwise, generate token normally (50% chance function, 50% chance plain).
+                            if (random.nextDouble() < 0.5) {
+                                String func = functions[random.nextInt(functions.length)];
+                                double arg = random.nextDouble() * 100 + 1;
+                                nextToken = func + "(" + String.format("%.2f", arg) + ")";
+                            } else {
+                                if (random.nextBoolean()) {
+                                    nextToken = String.valueOf(random.nextInt(100));
+                                } else {
+                                    nextToken = String.format("%.2f", random.nextDouble() * 100);
+                                }
+                            }
+                        }
+                        expression.append(nextToken);
                     }
-                }
 
-                // Optionally wrap the entire expression in parentheses 50% of the time
-                if (random.nextBoolean()) {
-                    expression.insert(0, "(");
-                    expression.append(")");
-                }
+                    //Optionally wrap the entire expression in parentheses (50% chance).
+                    if (random.nextBoolean()) {
+                        expression.insert(0, "(");
+                        expression.append(")");
+                    }
 
-                output.setText(expression.toString());
+                    //Convert the built expression to a string.
+                    String generatedExpression = expression.toString();
+                    output.setText(generatedExpression);
+                    //Now call handleEquals() to evaluate the expression.
+                    handleEquals();
+                }
                 break;
             case "syntactical":
-                //Generate an expression with random syntactical errors
-                errorLog.appendText("Generated syntactical expression\n");
+                output.setText("Generated syntactical expression");
                 break;
             case "random":
-                //Generate a completely random expression
-                errorLog.appendText("Generated random expression\n");
+                output.setText("Generated random expression");
                 break;
             default:
-                errorLog.appendText("Unknown generation type\n");
+                output.setText("Unknown generation type");
                 break;
         }
     }
 
-    public void handleEquals() {
-        String currentText = output.getText();
-        if (currentText.isEmpty()) return;
 
-        // Pre-validate the expression to collect all errors.
-        List<String> validationErrors = validateExpression(currentText);
+    public void handleEquals() {
+        // Store the original expression before processing.
+        String originalExpression = output.getText();
+        if (originalExpression.isEmpty()) return;
+
+        // Pre-validation: run validateExpression and log errors if any.
+        List<String> validationErrors = validateExpression(originalExpression);
         if (!validationErrors.isEmpty()) {
+            errorLog.appendText("Expression: " + originalExpression + "\n");
             for (String error : validationErrors) {
                 errorLog.appendText(error + "\n");
             }
-            // Scroll to ensure the latest error is visible.
+            errorLog.appendText("\n");
             errorLog.positionCaret(errorLog.getLength());
             output.setText("Errors detected. Check error log.");
             return;
         }
 
-        //If no validation errors, proceed to evaluate the expression.
         try {
-            currentText = autoCloseBrackets(currentText);
-            currentText = preprocessExpression(currentText);
-            currentText = evaluateFunctions(currentText);
+            String processedExpression = originalExpression;
+            processedExpression = autoCloseBrackets(processedExpression);
+            processedExpression = preprocessExpression(processedExpression);
+            processedExpression = evaluateFunctions(processedExpression);
 
-            while (currentText.contains("(")) {
-                currentText = evaluateInnermostExpression(currentText, '(', ')');
+            // Evaluate nested expressions.
+            while (processedExpression.contains("(")) {
+                processedExpression = evaluateInnermostExpression(processedExpression, '(', ')');
             }
-            while (currentText.contains("{")) {
-                currentText = evaluateInnermostExpression(currentText, '{', '}');
+            while (processedExpression.contains("{")) {
+                processedExpression = evaluateInnermostExpression(processedExpression, '{', '}');
             }
 
-            double result = evaluateExpression(currentText);
+            double result = evaluateExpression(processedExpression);
+            // Log the original expression and its result.
+            errorLog.appendText("Expression: " + originalExpression + " = " + result + "\n");
+            errorLog.positionCaret(errorLog.getLength());
             output.setText(String.valueOf(result));
         } catch (Exception e) {
-            handleErrors("Syntax Error in expression \"" + currentText + "\": " + e.getMessage(), e);
+            errorLog.appendText("Error in expression \"" + originalExpression + "\": " + e.getMessage() + "\n");
+            errorLog.positionCaret(errorLog.getLength());
+            output.setText("Syntax Error");
         }
     }
 
@@ -371,6 +420,14 @@ public class ButtonController {
 
         if (expression.contains("Infinity")) {
             errors.add("Infinity: Expression value too extreme");
+        }
+
+        // Debug: print errors to the console so you can check if validation works.
+        if (!errors.isEmpty()) {
+            System.out.println("Validation Errors:");
+            for (String error : errors) {
+                System.out.println(error);
+            }
         }
 
         return errors;
