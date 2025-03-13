@@ -1,20 +1,10 @@
 package com.example.pemdas_calculator;
 
-// JavaFX imports for UI elements and event handling
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.TextField;
 import javafx.event.ActionEvent;
-
-// Java utility imports for data structures and exception handling
 import java.util.Stack;
-import java.util.EmptyStackException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-
-// Java regex imports for expression validation
-import java.util.regex.Pattern;
-import java.util.regex.Matcher;
 
 public class ButtonController {
 
@@ -37,9 +27,6 @@ public class ButtonController {
     private Button equals;
 
     @FXML
-    private TextArea errorLog;
-
-    @FXML
     private Button exponent;
 
     @FXML
@@ -47,18 +34,6 @@ public class ButtonController {
 
     @FXML
     private Button four;
-
-    @FXML
-    private Button genCorrect;
-
-    @FXML
-    private Button genRanSyntactical;
-
-    @FXML
-    private Button genRandom;
-
-    @FXML
-    private Spinner<Integer> generationAmount;
 
     @FXML
     private Button leftCurrlyBracket;
@@ -107,9 +82,6 @@ public class ButtonController {
 
     @FXML
     private Button tangent;
-
-    @FXML
-    private Button testExpressions;
 
     @FXML
     private Button three;
@@ -172,268 +144,38 @@ public class ButtonController {
         //handles the undo and clear button
         undo.setOnAction(this::handleDelete);
         clear.setOnAction(this::handleDelete);
-
-        //handles the random expression generation buttons
-        genCorrect.setOnAction(event -> handleRandomGeneration("correct"));
-        genRandom.setOnAction(event -> handleRandomGeneration("random"));
-        genRanSyntactical.setOnAction(event -> handleRandomGeneration("syntactical"));
-        SpinnerValueFactory<Integer> valueFactory =
-                new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 100, 10);
-        generationAmount.setValueFactory(valueFactory);
     }
 
-    public void handleRandomGeneration(String type) {
-        Random random = new Random();
-        switch (type) {
-            //generation code created by chatGPT
-            case "correct":
-                //Get the number of expressions to generate from the spinner.
-                int count = generationAmount.getValue();
-                //Clear the errorLog so only new outputs are shown.
-                errorLog.clear();
-                for (int i = 0; i < count; i++) {
-                    StringBuilder expression = new StringBuilder();
-                    //Randomly decide on a token count between 3 and 7.
-                    int tokenCount = random.nextInt(5) + 3; // yields 3 to 7 tokens
-
-                    //Arrays for functions and operators.
-                    String[] functions = { "log", "ln", "sin", "cos", "tan" };
-                    String[] operators = { "+", "-", "*", "/" };
-
-                    // --- Generate the first token normally ---
-                    String token = "";
-                    if (random.nextDouble() < 0.5) {
-                        //Function-wrapped token (ensuring positive argument)
-                        String func = functions[random.nextInt(functions.length)];
-                        double arg = random.nextDouble() * 100 + 1;
-                        token = func + "(" + String.format("%.2f", arg) + ")";
-                    } else {
-                        //Plain number token (can be 0 here because it's not following a division)
-                        if (random.nextBoolean()) {
-                            token = String.valueOf(random.nextInt(100));
-                        } else {
-                            token = String.format("%.2f", random.nextDouble() * 100);
-                        }
-                    }
-                    expression.append(token);
-
-                    // --- Generate remaining tokens with an operator preceding each ---
-                    for (int j = 1; j < tokenCount; j++) {
-                        //Choose a random operator.
-                        String op = operators[random.nextInt(operators.length)];
-                        expression.append(op);
-
-                        String nextToken = "";
-                        //If the operator is division, force a plain number that is not zero.
-                        if (op.equals("/")) {
-                            boolean isInteger = random.nextBoolean();
-                            if (isInteger) {
-                                int num;
-                                do {
-                                    num = random.nextInt(100);
-                                } while (num == 0);
-                                nextToken = String.valueOf(num);
-                            } else {
-                                double num;
-                                do {
-                                    num = random.nextDouble() * 100;
-                                } while (num == 0.0);
-                                nextToken = String.format("%.2f", num);
-                            }
-                        } else {
-                            //Otherwise, generate token normally (50% chance function, 50% chance plain).
-                            if (random.nextDouble() < 0.5) {
-                                String func = functions[random.nextInt(functions.length)];
-                                double arg = random.nextDouble() * 100 + 1;
-                                nextToken = func + "(" + String.format("%.2f", arg) + ")";
-                            } else {
-                                if (random.nextBoolean()) {
-                                    nextToken = String.valueOf(random.nextInt(100));
-                                } else {
-                                    nextToken = String.format("%.2f", random.nextDouble() * 100);
-                                }
-                            }
-                        }
-                        expression.append(nextToken);
-                    }
-
-                    //Optionally wrap the entire expression in parentheses (50% chance).
-                    if (random.nextBoolean()) {
-                        expression.insert(0, "(");
-                        expression.append(")");
-                    }
-
-                    //Convert the built expression to a string.
-                    String generatedExpression = expression.toString();
-                    output.setText(generatedExpression);
-                    //Now call handleEquals() to evaluate the expression.
-                    handleEquals();
-                }
-                break;
-            case "syntactical":
-                output.setText("Generated syntactical expression");
-                break;
-            case "random":
-                output.setText("Generated random expression");
-                break;
-            default:
-                output.setText("Unknown generation type");
-                break;
-        }
-    }
-
-
+    //function to calculate the result
     public void handleEquals() {
-        // Store the original expression before processing.
-        String originalExpression = output.getText();
-        if (originalExpression.isEmpty()) return;
-
-        // Pre-validation: run validateExpression and log errors if any.
-        List<String> validationErrors = validateExpression(originalExpression);
-        if (!validationErrors.isEmpty()) {
-            errorLog.appendText("Expression: " + originalExpression + "\n");
-            for (String error : validationErrors) {
-                errorLog.appendText(error + "\n");
-            }
-            errorLog.appendText("\n");
-            errorLog.positionCaret(errorLog.getLength());
-            output.setText("Errors detected. Check error log.");
-            return;
-        }
+        String currentText = output.getText();
+        if (currentText.isEmpty()) return;
 
         try {
-            String processedExpression = originalExpression;
-            processedExpression = autoCloseBrackets(processedExpression);
-            processedExpression = preprocessExpression(processedExpression);
-            processedExpression = evaluateFunctions(processedExpression);
+            currentText = autoCloseBrackets(currentText);
+            currentText = preprocessExpression(currentText);
 
-            // Evaluate nested expressions.
-            while (processedExpression.contains("(")) {
-                processedExpression = evaluateInnermostExpression(processedExpression, '(', ')');
-            }
-            while (processedExpression.contains("{")) {
-                processedExpression = evaluateInnermostExpression(processedExpression, '{', '}');
+            //Processes Functions
+            currentText = evaluateFunctions(currentText);
+
+            //Makes parentheses work
+            while (currentText.contains("(")) {
+                currentText = evaluateInnermostExpression(currentText, '(', ')');
             }
 
-            double result = evaluateExpression(processedExpression);
-            // Log the original expression and its result.
-            errorLog.appendText("Expression: " + originalExpression + " = " + result + "\n");
-            errorLog.positionCaret(errorLog.getLength());
+            //Makes currly brackets work
+            while (currentText.contains("{")) {
+                currentText = evaluateInnermostExpression(currentText, '{', '}');
+            }
+
+            //Sends a call to evaluate the expression using a similar algorithm to the shunting-yard algorithm
+            double result = evaluateExpression(currentText);
             output.setText(String.valueOf(result));
-        } catch (Exception e) {
-            errorLog.appendText("Error in expression \"" + originalExpression + "\": " + e.getMessage() + "\n");
-            errorLog.positionCaret(errorLog.getLength());
+        }
+        //throws error if anything goes wrong
+        catch (Exception e) {
             output.setText("Syntax Error");
         }
-    }
-
-    public void handleErrors(String errorMessage, Exception e) {
-        // Create a detailed message including the exception's class and its message.
-        String detailedMessage = errorMessage + " (" + e.getClass().getSimpleName() + ": " + e.getMessage() + ")";
-        errorLog.appendText(detailedMessage + "\n");
-    }
-
-    //Generated by chatgpt to list out more detailed error messages, should include all errors within an expression
-    private List<String> validateExpression(String expression) {
-        List<String> errors = new ArrayList<>();
-
-        //Check for extra (unbalanced) closing parentheses and curly braces. (except for those handled by the missingclosingbrackets function)
-        int parenCount = 0;
-        int curlyCount = 0;
-        for (char c : expression.toCharArray()) {
-            if (c == '(') {
-                parenCount++;
-            } else if (c == ')') {
-                parenCount--;
-                if (parenCount < 0) {
-                    errors.add("Mismatched parentheses: extra closing parenthesis detected");
-                    parenCount = 0; // Reset to avoid duplicate messages
-                }
-            } else if (c == '{') {
-                curlyCount++;
-            } else if (c == '}') {
-                curlyCount--;
-                if (curlyCount < 0) {
-                    errors.add("Mismatched curly braces: extra closing curly brace detected");
-                    curlyCount = 0;
-                }
-            }
-        }
-
-        //Validate number formats: detect tokens with more than one decimal point.
-        Pattern invalidNumberPattern = Pattern.compile("\\b\\d*\\.\\d*\\.[\\d.]*\\b");
-        Matcher matcher = invalidNumberPattern.matcher(expression);
-        while (matcher.find()) {
-            errors.add("Invalid number format: '" + matcher.group() + "'");
-        }
-
-        //Validate operator sequences.
-        Pattern operatorPattern = Pattern.compile("([+\\-*/]{2,})");
-        matcher = operatorPattern.matcher(expression);
-        while (matcher.find()) {
-            String opSeq = matcher.group();
-            //Allow valid sequences: "+-", "*-", "/-", "^-", and "--" are interpreted as binary operator followed by a unary minus.
-            if (opSeq.equals("+-") || opSeq.equals("*-") || opSeq.equals("/-") || opSeq.equals("^-") || opSeq.equals("--")) {
-                continue; // Consider these as valid operator usage.
-            }
-            errors.add("Invalid operator sequence: '" + opSeq + "'");
-        }
-
-        //Validate domain for log and ln functions.
-        Pattern logPattern = Pattern.compile("log\\s*\\(([^)]+)\\)");
-        matcher = logPattern.matcher(expression);
-        while (matcher.find()) {
-            String argument = matcher.group(1).trim();
-            try {
-                double value = Double.parseDouble(argument);
-                if (value <= 0) {
-                    errors.add("log function undefined for non-positive value: " + value);
-                }
-            } catch (NumberFormatException e) {
-                errors.add("Invalid argument for log: " + argument);
-            }
-        }
-        Pattern lnPattern = Pattern.compile("ln\\s*\\(([^)]+)\\)");
-        matcher = lnPattern.matcher(expression);
-        while (matcher.find()) {
-            String argument = matcher.group(1).trim();
-            try {
-                double value = Double.parseDouble(argument);
-                if (value <= 0) {
-                    errors.add("ln function undefined for non-positive value: " + value);
-                }
-            } catch (NumberFormatException e) {
-                errors.add("Invalid argument for ln: " + argument);
-            }
-        }
-
-        // 5. Validate literal division by zero.
-        Pattern divByZeroPattern = Pattern.compile("/\\s*0(?![\\.0-9])");
-        matcher = divByZeroPattern.matcher(expression);
-        while (matcher.find()) {
-            errors.add("Division by zero detected near: '" + matcher.group().trim() + "'");
-        }
-
-        // 6. Validate unsupported characters.
-        Pattern allowedPattern = Pattern.compile("[^0-9A-Za-z+\\-*/^().{}\\s]");
-        matcher = allowedPattern.matcher(expression);
-        while (matcher.find()) {
-            errors.add("Unsupported character detected: '" + matcher.group() + "'");
-        }
-
-        if (expression.contains("Infinity")) {
-            errors.add("Infinity: Expression value too extreme");
-        }
-
-        // Debug: print errors to the console so you can check if validation works.
-        if (!errors.isEmpty()) {
-            System.out.println("Validation Errors:");
-            for (String error : errors) {
-                System.out.println(error);
-            }
-        }
-
-        return errors;
     }
 
     //Prevents application from crashing if you don't have a closed currly bracket and instead just inserts them
@@ -492,94 +234,95 @@ public class ButtonController {
 
     //Evaluates the end result expression using a form of the shunting-yard algorithm provided by chatgpt
     private double evaluateExpression(String expression) {
-        expression = preprocessExpression(expression); // Ensure negatives & multiplication are corrected
-        expression = evaluateFunctions(expression); // Process functions first
+        expression = preprocessExpression(expression); //Ensure negatives & multiplication are corrected
+
+        //Process functions like sin(), cos(), log() first
+        expression = evaluateFunctions(expression);
+
+        //Handle exponentiation (right-associative, highest precedence)
+        if (expression.contains("^")) {
+            expression = evaluateFunctions(expression);
+        }
 
         Stack<Double> numbers = new Stack<>();
         Stack<Character> operators = new Stack<>();
         int i = 0;
 
-        try {
-            while (i < expression.length()) {
-                char c = expression.charAt(i);
+        while (i < expression.length()) {
+            char c = expression.charAt(i);
 
-                // Skip spaces
-                if (c == ' ') {
-                    i++;
-                    continue;
-                }
-
-                // Handle negative numbers at the start or after an operator
-                if (c == '-' && (i == 0 || isOperator(Character.toString(expression.charAt(i - 1))))) {
-                    StringBuilder numBuffer = new StringBuilder("-");
-                    i++; // Move past '-'
-                    while (i < expression.length() && (Character.isDigit(expression.charAt(i)) || expression.charAt(i) == '.')) {
-                        numBuffer.append(expression.charAt(i));
-                        i++;
-                    }
-                    numbers.push(Double.parseDouble(numBuffer.toString()));
-                    continue;
-                }
-
-                // Handle numbers (including decimals)
-                if (Character.isDigit(c) || c == '.') {
-                    StringBuilder numBuffer = new StringBuilder();
-                    while (i < expression.length() && (Character.isDigit(expression.charAt(i)) || expression.charAt(i) == '.')) {
-                        numBuffer.append(expression.charAt(i));
-                        i++;
-                    }
-                    numbers.push(Double.parseDouble(numBuffer.toString()));
-                    continue;
-                }
-
-                // Handle Parentheses
-                if (c == '(') {
-                    int closeIndex = findClosingBracket(expression, i, '(', ')');
-                    if (closeIndex == -1) {
-                        throw new IllegalArgumentException("Mismatched parentheses");
-                    }
-
-                    String subExpression = expression.substring(i + 1, closeIndex);
-                    double subResult = evaluateExpression(subExpression);
-                    numbers.push(subResult);
-                    i = closeIndex + 1;
-                    continue;
-                }
-
-                // Handle Operators (+, -, *, /)
-                if (isOperator(Character.toString(c))) {
-                    while (!operators.isEmpty() && precedence(operators.peek()) >= precedence(c)) {
-                        numbers.push(applyOperation(operators.pop(), numbers.pop(), numbers.pop()));
-                    }
-                    operators.push(c);
-                }
-
+            //Skip spaces
+            if (c == ' ') {
                 i++;
+                continue;
             }
 
-            // Process remaining operators
-            while (!operators.isEmpty()) {
-                numbers.push(applyOperation(operators.pop(), numbers.pop(), numbers.pop()));
+            //Handle negative numbers at the start or after an operator
+            if (c == '-' && (i == 0 || isOperator(Character.toString(expression.charAt(i - 1))))) {
+                StringBuilder numBuffer = new StringBuilder("-");
+                i++; // Move past '-'
+                while (i < expression.length() && (Character.isDigit(expression.charAt(i)) || expression.charAt(i) == '.')) {
+                    numBuffer.append(expression.charAt(i));
+                    i++;
+                }
+                numbers.push(Double.parseDouble(numBuffer.toString()));
+                continue;
             }
 
-            return numbers.pop();
-        } catch (EmptyStackException ese) {
-            // Rethrow as an IllegalArgumentException for invalid operator sequences
-            throw new IllegalArgumentException("Invalid operator sequence", ese);
+            //Handle numbers (including decimals)
+            if (Character.isDigit(c) || c == '.') {
+                StringBuilder numBuffer = new StringBuilder();
+                while (i < expression.length() && (Character.isDigit(expression.charAt(i)) || expression.charAt(i) == '.')) {
+                    numBuffer.append(expression.charAt(i));
+                    i++;
+                }
+                numbers.push(Double.parseDouble(numBuffer.toString()));
+                continue;
+            }
+
+            //Handle Parentheses
+            if (c == '(') {
+                int closeIndex = findClosingBracket(expression, i, '(', ')');
+                if (closeIndex == -1) return 0; // Mismatched parentheses
+
+                String subExpression = expression.substring(i + 1, closeIndex);
+                double subResult = evaluateExpression(subExpression);
+
+                numbers.push(subResult);
+                i = closeIndex + 1;
+                continue;
+            }
+
+            //Handle Operators (+, -, *, /)
+            if (isOperator(Character.toString(c))) {
+                while (!operators.isEmpty() && precedence(operators.peek()) >= precedence(c)) {
+                    numbers.push(applyOperation(operators.pop(), numbers.pop(), numbers.pop()));
+                }
+                operators.push(c);
+            }
+
+            i++;
         }
+
+        //Process remaining operators
+        while (!operators.isEmpty()) {
+            numbers.push(applyOperation(operators.pop(), numbers.pop(), numbers.pop()));
+        }
+
+        return numbers.pop();
     }
 
     //Evaluates the trigonometric, logorithmic, ln, and exponent functions. Provided by yours truely chatgpt with tinkering by me to fix a couple small issues
     private String evaluateFunctions(String expression) {
         String[] functions = {"sin", "cos", "tan", "log", "ln"};
 
-        // Process functions like sin(), cos(), log(), ln()
+        //Process functions like sin(), cos(), log(), ln()
         for (String func : functions) {
             while (expression.contains(func + "(")) {
                 int startIndex = expression.lastIndexOf(func + "(");
                 int endIndex = findClosingBracket(expression, startIndex + func.length(), '(', ')');
 
-                // No matching closing parenthesis found
+                //No matching closing parenthesis
                 if (endIndex == -1) return expression;
 
                 String inside = expression.substring(startIndex + func.length() + 1, endIndex);
@@ -587,81 +330,55 @@ public class ButtonController {
                 double result = 0;
 
                 switch (func) {
-                    case "sin":
-                        result = Math.sin(Math.toRadians(value));
-                        break;
-                    case "cos":
-                        result = Math.cos(Math.toRadians(value));
-                        break;
-                    case "tan":
-                        result = Math.tan(Math.toRadians(value));
-                        break;
-                    case "log":
-                        // Check if the argument is valid (log is defined only for positive numbers)
-                        if (value <= 0) {
-                            throw new IllegalArgumentException("log function is undefined for non-positive values: " + value);
-                        }
-                        result = Math.log10(value);
-                        break;
-                    case "ln":
-                        // Check if the argument is valid (ln is defined only for positive numbers)
-                        if (value <= 0) {
-                            throw new IllegalArgumentException("ln function is undefined for non-positive values: " + value);
-                        }
-                        result = Math.log(value);
-                        break;
+                    case "sin": result = Math.sin(Math.toRadians(value)); break;
+                    case "cos": result = Math.cos(Math.toRadians(value)); break;
+                    case "tan": result = Math.tan(Math.toRadians(value)); break;
+                    case "log": result = Math.log10(value); break;
+                    case "ln": result = Math.log(value); break;
                 }
 
-                // Replace the function call with the computed result in the expression
+                //Replace function call with computed result
                 expression = expression.substring(0, startIndex) + result + expression.substring(endIndex + 1);
             }
         }
 
-        // Process exponentiation and return the modified expression
+        //Process exponentiation (`^`) **right to left**
         while (expression.contains("^")) {
-            int lastIndex = expression.lastIndexOf("^"); // Find rightmost '^'
+            int lastIndex = expression.lastIndexOf("^"); // Find last `^` (rightmost first)
 
-            // Find base (left-side number or expression)
+            //Find base (left-side number or expression)
             int baseStart = lastIndex - 1;
             if (expression.charAt(baseStart) == ')') {
-                // If the character is ')', find the matching '('
-                baseStart = findOpeningBracket(expression, baseStart, '(', ')');
+                baseStart = findOpeningBracket(expression, baseStart, '(', ')'); //Handle expressions like `(2+3)^2`
             } else {
-                // Move left to capture digits and decimals.
-                // Include '-' only if it’s a unary minus (i.e. either at the very start or preceded by an operator)
-                while (baseStart >= 0 && (
-                        Character.isDigit(expression.charAt(baseStart)) ||
-                                expression.charAt(baseStart) == '.'
-                                || (expression.charAt(baseStart) == '-' &&
-                                (baseStart == 0 || isOperator(Character.toString(expression.charAt(baseStart - 1))))
-                        )
-                )) {
+                while (baseStart >= 0 && (Character.isDigit(expression.charAt(baseStart)) || expression.charAt(baseStart) == '.' || expression.charAt(baseStart) == '-')) {
                     baseStart--;
                 }
-                baseStart++; // Adjust to the actual start of the base
+                baseStart++;
             }
 
-            // Find exponent (right-side number or expression)
+            //Find exponent (right-side number or expression)
             int expStart = lastIndex + 1;
             int expEnd = expStart;
             if (expression.charAt(expStart) == '(') {
-                expEnd = findClosingBracket(expression, expStart, '(', ')') + 1;
+                expEnd = findClosingBracket(expression, expStart, '(', ')') + 1; // Handle expressions like `2^(1+1)`
             } else {
-                while (expEnd < expression.length() &&
-                        (Character.isDigit(expression.charAt(expEnd)) || expression.charAt(expEnd) == '.'
-                                || (expression.charAt(expEnd) == '-' && expEnd == lastIndex + 1))) {
+                while (expEnd < expression.length() && (Character.isDigit(expression.charAt(expEnd)) || expression.charAt(expEnd) == '.')) {
                     expEnd++;
                 }
             }
 
-            // Evaluate the base and exponent parts
-            double base = evaluateExpression(expression.substring(baseStart, lastIndex));
-            double exponent = evaluateExpression(expression.substring(expStart, expEnd));
+            //Extract base and exponent
+            double base = evaluateExpression(expression.substring(baseStart, lastIndex)); // Base must be evaluated
+            double exponent = evaluateExpression(expression.substring(expStart, expEnd)); // Exponent must be evaluated
+
+            //Compute power
             double result = Math.pow(base, exponent);
 
-            // Replace the exponentiation portion with the computed result
+            //Replace exponentiation part with computed result
             expression = expression.substring(0, baseStart) + result + expression.substring(expEnd);
         }
+
         return expression;
     }
 
@@ -716,22 +433,12 @@ public class ButtonController {
     //Applies the mathematical operation
     private double applyOperation(char operator, double b, double a) {
         switch (operator) {
-            case '+':
-                return a + b;
-            case '-':
-                return a - b;
-            case '*':
-                return a * b;
-            case '/':
-                // Explicitly check for division by zero
-                if (b == 0) {
-                    throw new ArithmeticException("Division by zero");
-                }
-                return a / b;
-            case '^':
-                return Math.pow(a, b);
-            default:
-                return 0;
+            case '+': return a + b;
+            case '-': return a - b;
+            case '*': return a * b;
+            case '/': return a / b;
+            case '^': return Math.pow(a, b);
+            default: return 0;
         }
     }
 
