@@ -101,7 +101,7 @@ public class ButtonController {
     //initilize all buttons
     public void initialize() {
         //handles the equals function
-        equals.setOnAction(event -> handleEquals());
+        equals.setOnAction(event -> handleEquals(output.getText()));
 
         //handles numbers
         zero.setOnAction(event -> handleButtonClick("0"));
@@ -147,8 +147,8 @@ public class ButtonController {
     }
 
     //function to calculate the result
-    public void handleEquals() {
-        String currentText = output.getText();
+    public void handleEquals(String currentText) {
+        currentText = output.getText();
         if (currentText.isEmpty()) return;
 
         try {
