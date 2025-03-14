@@ -148,7 +148,6 @@ public class ButtonController {
 
     //function to calculate the result
     public void handleEquals(String currentText) {
-        currentText = output.getText();
         if (currentText.isEmpty()) return;
 
         try {
